@@ -92,17 +92,22 @@ static void quitloop(EV_P_ ev_timer *w, int revents){
   ev_break(EV_A_ EVBREAK_ALL);
 }
 
-ev_timer *newloop(EV_P){
+ev_timer *newloop(
+    int,
+    EV_CB_DECLARE(ev_timer)
+){
   ev_timer *t = malloc(sizeof(ev_timer));
   ev_timer_init(t, quitloop, 1, 0);
-  //ev_timer_start(loop, t);
   return t;
 }
 
 <#
 
-(define newloop (foreign-lambda *ev-timer "newloop" ev-loop))
-(define t (newloop l))
+(define newloop (foreign-lambda *ev-timer "newloop" int (function void (ev-loop *ev-timer int))))
+(define quitloop (foreign-lambda void "quitloop" ev-loop *ev-timer int))
+
+(define t (newloop 1 quitloop))
+;(ev-timer-init t quitloop 1 0)
 (ev-timer-start l t)
 
 ;(define t (malloc-ev-timer))
