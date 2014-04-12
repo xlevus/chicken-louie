@@ -1,5 +1,6 @@
 (import foreign)
 (foreign-declare "#include <ev.h>")
+(foreign-declare "#include <stdio.h>")
 
 (define-foreign-variable EVFLAG-AUTO "EVFLAG_AUTO")
 (define-foreign-variable EVFLAG-NO_ENV "EVFLAG_NO_ENV")
@@ -25,7 +26,7 @@
 (define-foreign-type ev-loop (c-pointer "struct ev_loop"))
 
 (define-foreign-type ev-io "struct ev_io")
-(define-foreign-type ev-timer "struct ev_timer")
+(define-foreign-type ev-timer "ev_timer")
 (define-foreign-type *ev-timer (c-pointer ev-timer))
 
 
@@ -80,15 +81,34 @@
 
 
 (define-external (testcb (ev-loop loop) (*ev-timer timer) (int reent)) void
-    (display "swing!") (newline)
+    ; success?
     (ev-break loop EVBREAK_ALL)
-    0)
+    )
 
+#>
 
-(new-ev-timer l 1.0 (lambda (loop timer revents)
-    (display "YAY")(newline)
-    (ev-break loop EVBREAK_ALL)
-))
+static void quitloop(EV_P_ ev_timer *w, int revents){
+  puts("Fuck yeah!");
+  ev_break(EV_A_ EVBREAK_ALL);
+}
+
+ev_timer *newloop(EV_P){
+  ev_timer *t = malloc(sizeof(ev_timer));
+  ev_timer_init(t, quitloop, 1, 0);
+  //ev_timer_start(loop, t);
+  return t;
+}
+
+<#
+
+(define newloop (foreign-lambda *ev-timer "newloop" ev-loop))
+(define t (newloop l))
+(ev-timer-start l t)
+
+;(define t (malloc-ev-timer))
+;(ev-timer-init t testcb 1.0 0.0)
+;(ev-timer-start l t)
+
 (ev-run l 0)
 (ev-loop-destroy l)
 
