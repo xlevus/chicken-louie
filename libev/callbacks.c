@@ -9,8 +9,6 @@
 
 void cs_timer_cb(EV_P_ ev_timer *w, int revents){
     struct cs_ev_timer *cet = (struct cs_ev_timer*) w;
-
-    //puts("Called back");
     C_callback(cet->closure, 0);
 }
 

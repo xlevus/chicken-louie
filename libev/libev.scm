@@ -74,10 +74,12 @@
 (display "Depth: ")(display (ev-depth l))(newline)
 (display "Backend: ")(display (ev-backend l))(newline)
 
-
-(ev-new-timer l 
-    (lambda () (display "YES")(newline))
-    1.0 0.0)
+(let ((z 32))
+    (ev-new-timer l 
+        (lambda () 
+          (set! z (+ z 1)) 
+          (display z)(newline))
+        1.0 1.0))
 
 (ev-run l 0)
 (ev-loop-destroy l)
