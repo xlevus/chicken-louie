@@ -1,6 +1,9 @@
+;csc -lev libev/libev.scm && ./libev/libev
+
 (import foreign)
 (foreign-declare "#include <ev.h>")
 (foreign-declare "#include <stdio.h>")
+(foreign-declare "#include \"callbacks.h\"")
 
 (define-foreign-variable EVFLAG-AUTO "EVFLAG_AUTO")
 (define-foreign-variable EVFLAG-NO_ENV "EVFLAG_NO_ENV")
@@ -28,6 +31,7 @@
 (define-foreign-type ev-io "struct ev_io")
 (define-foreign-type ev-timer "ev_timer")
 (define-foreign-type *ev-timer (c-pointer ev-timer))
+(define-foreign-type ev-cs-timer "cs_ev_timer")
 
 
 (define ev-version-major (foreign-lambda int "ev_version_major"))
@@ -59,18 +63,9 @@
 (define ev-timer-init (foreign-lambda void "ev_timer_init" *ev-timer (function void (ev-loop *ev-timer int)) ev-tstamp ev-tstamp))
 (define ev-timer-start (foreign-lambda void "ev_timer_start" ev-loop *ev-timer))
 
-; TODO: use (make-blob)
-(define malloc-ev-timer (foreign-lambda* *ev-timer ()
-  "ev_timer *t;
-   t = malloc(sizeof(ev_timer));
-   C_return(t);"))
+(define ev-new-timer 
+  (foreign-lambda void "new_timer" ev-loop scheme-object ev-tstamp ev-tstamp))
 
-(define (new-ev-timer loop time callback)
-  (let ((t (malloc-ev-timer)))
-      (ev-timer-init t callback time 0)
-      (ev-timer-start loop t)
-      t))
-  
 ; main
 (define l (ev-default-loop 0))
 
@@ -80,39 +75,9 @@
 (display "Backend: ")(display (ev-backend l))(newline)
 
 
-(define-external (testcb (ev-loop loop) (*ev-timer timer) (int reent)) void
-    ; success?
-    (ev-break loop EVBREAK_ALL)
-    )
-
-#>
-
-static void quitloop(EV_P_ ev_timer *w, int revents){
-  puts("Fuck yeah!");
-  ev_break(EV_A_ EVBREAK_ALL);
-}
-
-ev_timer *newloop(
-    int,
-    EV_CB_DECLARE(ev_timer)
-){
-  ev_timer *t = malloc(sizeof(ev_timer));
-  ev_timer_init(t, quitloop, 1, 0);
-  return t;
-}
-
-<#
-
-(define newloop (foreign-lambda *ev-timer "newloop" int (function void (ev-loop *ev-timer int))))
-(define quitloop (foreign-lambda void "quitloop" ev-loop *ev-timer int))
-
-(define t (newloop 1 quitloop))
-;(ev-timer-init t quitloop 1 0)
-(ev-timer-start l t)
-
-;(define t (malloc-ev-timer))
-;(ev-timer-init t testcb 1.0 0.0)
-;(ev-timer-start l t)
+(ev-new-timer l 
+    (lambda () (display "YES")(newline))
+    1.0 0.0)
 
 (ev-run l 0)
 (ev-loop-destroy l)
